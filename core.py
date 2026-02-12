@@ -200,9 +200,13 @@ class DQNAgent:
 
     def save(self, filepath: str):
         os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-        # Save weights only (portable across TF/Keras versions)
-        self.q_network.save_weights(f"{filepath}_q_network.weights.h5")
-        self.target_network.save_weights(f"{filepath}_target_network.weights.h5")
+        # Save weights as numpy arrays via pickle (100% portable)
+        q_weights = [w.numpy() if hasattr(w, 'numpy') else np.array(w) for w in self.q_network.get_weights()]
+        t_weights = [w.numpy() if hasattr(w, 'numpy') else np.array(w) for w in self.target_network.get_weights()]
+        with open(f"{filepath}_q_weights.pkl", 'wb') as f:
+            pickle.dump(q_weights, f, protocol=2)
+        with open(f"{filepath}_t_weights.pkl", 'wb') as f:
+            pickle.dump(t_weights, f, protocol=2)
         params = {
             'state_dim': self.state_dim,
             'action_dim': self.action_dim,
@@ -234,13 +238,16 @@ class DQNAgent:
             learning_rate=params['learning_rate'],
             use_dueling=True
         )
-        # Prefer portable weights; fall back to .keras files
-        q_weights = f"{filepath}_q_network.weights.h5"
-        t_weights = f"{filepath}_target_network.weights.h5"
-        if os.path.exists(q_weights):
-            agent.q_network.load_weights(q_weights)
-            agent.target_network.load_weights(t_weights)
+        # Load weights from portable pickle files
+        q_pkl = f"{filepath}_q_weights.pkl"
+        t_pkl = f"{filepath}_t_weights.pkl"
+        if os.path.exists(q_pkl):
+            with open(q_pkl, 'rb') as f:
+                agent.q_network.set_weights(pickle.load(f))
+            with open(t_pkl, 'rb') as f:
+                agent.target_network.set_weights(pickle.load(f))
         else:
+            # Fallback: try .keras files
             agent.q_network = keras.models.load_model(f"{filepath}_q_network.keras", compile=False)
             agent.target_network = keras.models.load_model(f"{filepath}_target_network.keras", compile=False)
         agent.q_network.compile(optimizer=optimizers.Adam(learning_rate=params['learning_rate']), loss='mse')
