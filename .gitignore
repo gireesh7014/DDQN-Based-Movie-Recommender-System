@@ -1,0 +1,46 @@
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual environments ─────────────────────────────────────────────────
+venv/
+env/
+.env/
+.venv/
+conda-env/
+
+# ── Jupyter Notebook ─────────────────────────────────────────────────────
+main.ipynb
+.ipynb_checkpoints/
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS files ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+nul
+
+# ── Unrelated directories ────────────────────────────────────────────────
+playground/
+presentation_figures/
+.github/
+
+# ── Generated HTML visualizations ────────────────────────────────────────
+dqn_network_visualization.html
+network_activation_flow.html
+
+# ── Generated images (not used by the app) ───────────────────────────────
+agent_comparison.png
+training_progress.png
+network_architecture_fixed.png
