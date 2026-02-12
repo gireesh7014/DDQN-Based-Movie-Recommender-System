@@ -200,8 +200,9 @@ class DQNAgent:
 
     def save(self, filepath: str):
         os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-        self.q_network.save(f"{filepath}_q_network.keras")
-        self.target_network.save(f"{filepath}_target_network.keras")
+        # Save weights only (portable across TF/Keras versions)
+        self.q_network.save_weights(f"{filepath}_q_network.weights.h5")
+        self.target_network.save_weights(f"{filepath}_target_network.weights.h5")
         params = {
             'state_dim': self.state_dim,
             'action_dim': self.action_dim,
@@ -220,6 +221,7 @@ class DQNAgent:
     def load(cls, filepath: str) -> 'DQNAgent':
         with open(f"{filepath}_params.pkl", 'rb') as f:
             params = pickle.load(f)
+        # Rebuild architecture from code (version-safe)
         agent = cls(
             state_dim=params['state_dim'],
             action_dim=params['action_dim'],
@@ -230,11 +232,18 @@ class DQNAgent:
             batch_size=params['batch_size'],
             target_update_freq=params['target_update_freq'],
             learning_rate=params['learning_rate'],
-            use_dueling=False
+            use_dueling=True
         )
-        agent.q_network = keras.models.load_model(f"{filepath}_q_network.keras", compile=False)
+        # Prefer portable weights; fall back to .keras files
+        q_weights = f"{filepath}_q_network.weights.h5"
+        t_weights = f"{filepath}_target_network.weights.h5"
+        if os.path.exists(q_weights):
+            agent.q_network.load_weights(q_weights)
+            agent.target_network.load_weights(t_weights)
+        else:
+            agent.q_network = keras.models.load_model(f"{filepath}_q_network.keras", compile=False)
+            agent.target_network = keras.models.load_model(f"{filepath}_target_network.keras", compile=False)
         agent.q_network.compile(optimizer=optimizers.Adam(learning_rate=params['learning_rate']), loss='mse')
-        agent.target_network = keras.models.load_model(f"{filepath}_target_network.keras", compile=False)
         return agent
 
 
